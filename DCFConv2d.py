@@ -114,10 +114,10 @@ class DCFConv2d(nn.Module):
         if type(bases) != np.ndarray:
             assert bases in ['FB', 'random', 'PCA']
 
-        if bases == 'FB':
+        if type(bases) == str and bases == 'FB':
             if kernel_size % 2 == 0:
                 raise Exception("kernel_size should be odd")
-            base = torch.from_numpy(kernel_size // 2)
+            base = calculate_FB_bases(kernel_size // 2)
 
             if num_bases > base.shape[1]:
                 raise Exception(
@@ -125,7 +125,7 @@ class DCFConv2d(nn.Module):
             base = base[:, :num_bases]
             base = base.reshape(kernel_size, kernel_size, num_bases)
             base = np.expand_dims(base.transpose(2, 0, 1), 1)
-        elif bases == 'random':
+        elif type(bases) == str and bases == 'random':
             base = np.random.randn(num_bases, 1, kernel_size, kernel_size)
         else:
             assert type(bases) == np.ndarray
@@ -137,24 +137,28 @@ class DCFConv2d(nn.Module):
                     base.shape[1], num_bases))
             transformer = PCA(n_components=num_bases)
             base = transformer.fit_transform(base)
-            base = base.transpose().reshape(num_bases, kernel_size, kernel_size)
+            base = base.transpose().reshape(num_bases, 1, kernel_size, kernel_size)
 
         self.bases = Parameter(torch.Tensor(base), requires_grad=False)
         self.weight = Parameter(torch.Tensor(out_channels, in_channels * num_bases, 1, 1))
         nn.init.kaiming_normal_(self.weight, nonlinearity='relu')
         if bias:
             self.bias = Parameter(torch.Tensor(out_channels))
-            nn.init.constant(self.bias, 0)
+            nn.init.constant_(self.bias, 0)
         else:
             self.register_parameter('bias', None)
 
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.num_bases = num_bases
 
     def forward(self, input):
 
-        in_shape = input.shape()
+        in_shape = input.size()
         input = input.view(-1, 1, in_shape[2], in_shape[3])
 
         feature = F.conv2d(input, self.bases, stride=self.stride, padding=self.padding, dilation=self.dilation)
@@ -163,3 +167,8 @@ class DCFConv2d(nn.Module):
         output = F.conv2d(feature, self.weight, bias=self.bias, stride=1, padding=0)
 
         return output
+
+    def extra_repr(self):
+        return 'in_channels={}, out_channels={}, kernel_size={}, num_bases={}, bias={}'.format(
+            self.in_channels, self.out_channels, self.kernel_size, self.num_bases, self.bias is not None
+        )
