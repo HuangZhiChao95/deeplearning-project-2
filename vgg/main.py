@@ -1,10 +1,9 @@
-import torch
 import numpy as np
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import argparse
 import torch.utils.data
-from model import VGG16
+from vgg.model import VGG16
 import os
 
 parser = argparse.ArgumentParser()

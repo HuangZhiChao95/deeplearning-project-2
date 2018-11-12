@@ -121,7 +121,7 @@ class DCFConv2d(nn.Module):
 
             if num_bases > base.shape[1]:
                 raise Exception(
-                    'The maximum number of bases for kernel size = %d is %d' % (kernel_size, base_np.shape[1]))
+                    'The maximum number of bases for kernel size = %d is %d' % (kernel_size, base.shape[1]))
             base = base[:, :num_bases]
             base = base.reshape(kernel_size, kernel_size, num_bases)
             base = np.expand_dims(base.transpose(2, 0, 1), 1)

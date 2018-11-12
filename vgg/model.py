@@ -1,5 +1,5 @@
 import torch.nn as nn
-from DCFConv2d import DCFConv2d
+from vgg.DCFConv2d import DCFConv2d
 import torch
 
 class VGG16(nn.Module):
